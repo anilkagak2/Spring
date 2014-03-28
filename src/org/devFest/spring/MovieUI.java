@@ -1,7 +1,15 @@
 package org.devFest.spring;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,16 +24,27 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.json.JSONTokener;
+
+import com.google.android.gms.internal.ht;
 
 import android.content.ContentResolver;
+import android.content.Context;
 import android.database.Cursor;
 import android.gesture.GestureOverlayView.OnGestureListener;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.RemoteControlClient.OnGetPlaybackPositionListener;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.ContactsContract.Directory;
 import android.provider.MediaStore;
 import android.provider.MediaStore.Images.ImageColumns;
+import android.R.string;
 import android.app.Activity;
 import android.support.v4.view.MotionEventCompat;
 import android.util.Log;
@@ -42,8 +61,10 @@ public class MovieUI extends Activity {
 
 	GestureDetector gDetector;
 	ImageView gImage;
+	private Context context;
 	private List<Movie> movies;
 	private int currentMovie=-1;
+	private File picturesDir;
 	private static final String TAG="MovieUI";
 	private static final int MOVIES_BUFFER_LENGTH=10;
 	
@@ -51,6 +72,8 @@ public class MovieUI extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_movie_ui);
+		
+		context = this;
 		
 		gDetector = new GestureDetector(this, new MyGestureDetector());
 		View mainView = (View) findViewById(R.id.mainView);
@@ -66,6 +89,10 @@ public class MovieUI extends Activity {
 		
 		gImage = (ImageView) findViewById(R.id.imgDisplay);
 		movies = new ArrayList<Movie>();
+		
+		picturesDir = getAlbumStorageDir(this, "SpringMovies");
+		Toast.makeText(this, "Dir : SpringMovies created", Toast.LENGTH_SHORT).show();
+		
 /*		int loader = R.drawable.loader;
 		
 		String image_url = "http://api.androidhive.info/images/sample.jpg";
@@ -82,10 +109,23 @@ public class MovieUI extends Activity {
 		
 		// getRecommendedMovies();
 		// createDummyDatabase();
+		new DownloadMoviesTask()
+			.execute(new String[] {"http://harshversion1.appspot.com/get_movie/tt2308606"});
+		
 		showData();
 		showMovie();
 	}
 
+	public File getAlbumStorageDir(Context context, String albumName) {
+	    // Get the directory for the app's private pictures directory. 
+	    File file = new File(context.getExternalFilesDir(
+	            Environment.DIRECTORY_PICTURES), albumName);
+	    if (!file.mkdirs()) {
+	        Log.e(TAG, "Directory not created");
+	    }
+	    return file;
+	}
+	
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu; this adds items to the action bar if it is present.
@@ -310,4 +350,86 @@ public class MovieUI extends Activity {
         
 	}
 	
+	private class DownloadMoviesTask extends AsyncTask<String, Void, List<String>> {
+		@Override
+		protected List<String> doInBackground(String... urls) {
+			List<String> downloadedPictures = new ArrayList<String>();
+			
+			// http://harshversion1.appspot.com/get_movie/tt2308606
+			for (String url : urls) {
+				HttpClient httpClient = new DefaultHttpClient();
+				HttpGet httpGet = new HttpGet(url);
+				
+				// Making HTTP Request
+				try {
+				    HttpResponse response = httpClient.execute(httpGet);
+				    HttpEntity httpEntity = response.getEntity();
+				    try {
+				    	BufferedReader reader = new BufferedReader(new InputStreamReader(httpEntity.getContent(), "UTF-8"));
+				    	String json = reader.readLine();
+				    	Log.v("json string ", json);
+						JSONObject moviesArray = new JSONObject(json);
+						
+						// TODO change it to ENUM or something similar
+						String moviePicUrl = moviesArray.getString("poster");
+						String movieId = moviesArray.getString("imdb_id");
+						downloadAndSaveImage (moviePicUrl, movieId);
+					} catch (IllegalStateException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (JSONException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				} catch (ClientProtocolException e) {
+				    // writing exception to log
+				    e.printStackTrace();
+				         
+				} catch (IOException e) {
+				    // writing exception to log
+				    e.printStackTrace();
+				}
+				
+				if (isCancelled()) {
+					// TODO do book keeping here [Early exit]
+					break;
+				}
+			}
+			
+			return downloadedPictures;
+		}
+
+		@Override
+		protected void onPostExecute(List<String> movies) {
+			Toast.makeText(context, "Movies downloaded: " + movies.size(), Toast.LENGTH_LONG).show() ;
+		}
+		
+		private String downloadAndSaveImage (String imageUrl, String ID) {
+			String savedFileName="";
+			
+			try {
+				InputStream is = (InputStream) new URL(imageUrl).getContent();
+		        byte[] buffer = new byte[8192];
+		        int bytesRead;
+		        ByteArrayOutputStream output = new ByteArrayOutputStream();
+		        while ((bytesRead = is.read(buffer)) != -1) {
+		            output.write(buffer, 0, bytesRead);
+		        }
+		        
+		        savedFileName = picturesDir.getAbsolutePath() + File.separator + ID + ".jpg";
+		        Log.v("File saving name:", savedFileName);
+		        File outputFile = new File(savedFileName);
+		        FileOutputStream fos = new FileOutputStream(outputFile);
+		        fos.write(output.toByteArray());
+		        fos.close();
+		    } catch (MalformedURLException e) {
+		        e.printStackTrace();
+		    } catch (IOException e) {
+		        e.printStackTrace();
+		    }
+			
+			return savedFileName;
+		}
+		
+	}
 }
