@@ -12,6 +12,9 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
+import java.util.Set;
+import java.util.TreeSet;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -46,8 +49,10 @@ import android.provider.MediaStore;
 import android.provider.MediaStore.Images.ImageColumns;
 import android.R.string;
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.support.v4.view.MotionEventCompat;
 import android.util.Log;
+import android.util.Pair;
 import android.view.GestureDetector;
 import android.view.Menu;
 import android.view.MotionEvent;
@@ -62,11 +67,20 @@ public class MovieUI extends Activity {
 	GestureDetector gDetector;
 	ImageView gImage;
 	private Context context;
+	private DatabaseHelper dbHelper;
 	private List<Movie> movies;
+	private List<MovieIdSeen> movieIds;
+	private int movieIdRange;
 	private int currentMovie=-1;
 	private File picturesDir;
 	private static final String TAG="MovieUI";
 	private static final int MOVIES_BUFFER_LENGTH=10;
+	private static final String POSTER_NA = "N/A";
+	private static final String MOVIE_BASE_URL = "http://www.omdbapi.com/?i=";
+	
+	private static final String JSON_POSTER="Poster";
+	private static final String JSON_TITLE="Title";
+	private static final String JSON_ID="imdbID";
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -91,7 +105,23 @@ public class MovieUI extends Activity {
 		movies = new ArrayList<Movie>();
 		
 		picturesDir = getAlbumStorageDir(this, "SpringMovies");
-		Toast.makeText(this, "Dir : SpringMovies created", Toast.LENGTH_SHORT).show();
+		//Toast.makeText(this, "Dir : SpringMovies created", Toast.LENGTH_SHORT).show();
+		
+		// Read Movie Ids & we'll start showing movies from the list one-by-one
+		// TODO remove movies [pictures might take a lot of space]
+		// TODO save this variable on disk & read from there after first invocation
+		movieIds = new ArrayList<MovieIdSeen>();
+		readMovieIds();
+		movieIdRange = movieIds.size();
+		
+		Toast.makeText(this, "Movie Ids: " + movieIds.size(), Toast.LENGTH_SHORT).show();
+		
+		dbHelper = new DatabaseHelper(this);
+		
+		List<String> moviesToFetch = getNewMovieIdsToLoad();
+		for (String movie : moviesToFetch) {
+			Log.v("toFetch", movie);
+		}
 		
 /*		int loader = R.drawable.loader;
 		
@@ -110,9 +140,10 @@ public class MovieUI extends Activity {
 		// getRecommendedMovies();
 		// createDummyDatabase();
 		new DownloadMoviesTask()
-			.execute(new String[] {"http://harshversion1.appspot.com/get_movie/tt2308606"});
+			.execute(moviesToFetch.toArray(new String[moviesToFetch.size()]));
+			//.execute(new String[] {"http://harshversion1.appspot.com/get_movie/tt2308606"});
 		
-		showData();
+		// showData();
 		showMovie();
 	}
 
@@ -152,18 +183,88 @@ public class MovieUI extends Activity {
 	}
 	
 	private void showMovie() {
+		// TODO Show some error or warning stuff
+		if (movies.size() == 0) return;
+		
 		if (currentMovie == -1) return;
 		if (currentMovie == movies.size())
 			currentMovie=0;
 		
-		String imagePath = movies.get(currentMovie).url;
-		BitmapFactory.Options options = new BitmapFactory.Options();
-		options.inSampleSize = 2;
-		Bitmap bImage = BitmapFactory.decodeFile(imagePath, options);
-		gImage.setImageBitmap(bImage);
+		//String imagePath = movies.get(currentMovie).url;
+		// TODO check for the existence
+		// Ideally we should not load from the imagePath instead we can 
+		// maintain the bitmaps we've downloaded
+		String imagePath = picturesDir.getAbsolutePath() + File.separator
+				+ movies.get(currentMovie).imdbId + ".jpg";
+		Log.v("SHowing movie", imagePath);
+		
+		//File imageFile = getBaseContext().getFileStreamPath(imagePath);
+		File imageFile = new File(imagePath);
+		if (!imageFile.exists()) {
+			gImage.setImageResource(R.drawable.not_available);
+			return;	// No image to display
+		} else {
+			BitmapFactory.Options options = new BitmapFactory.Options();
+			options.inSampleSize = 2;
+			Bitmap bImage = BitmapFactory.decodeFile(imagePath, options);
+			gImage.setImageBitmap(bImage);
+		}
 		
 		// NEXT MOVIE TO SHOW
 		// currentMovie++;
+	}
+	
+	private void readMovieIds () {
+		InputStream input = getResources().openRawResource(R.raw.movieids);
+		BufferedReader reader = new BufferedReader(new InputStreamReader(input));
+		String id=null;
+		try {
+			id = reader.readLine();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		while (id != null) {
+			movieIds.add(new MovieIdSeen(id, false));
+			try {
+				id = reader.readLine();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	private List<String> getNewMovieIdsToLoad () {
+		List<String> moviesToFetch = new ArrayList<String>();
+		
+		// TODO test this function's logic [Shouldn't loop forever]
+		if (movieIdRange > MOVIES_BUFFER_LENGTH) {
+			Random random = new Random();
+			int idsGenerated=0;
+			while (idsGenerated != MOVIES_BUFFER_LENGTH) {
+				int randomNum = random.nextInt(movieIdRange);
+				if (movieIds.get(randomNum).seen == false) {
+					movieIds.get(randomNum).seen = true;
+					
+					// add to the movieList to download from the web site
+					String movieUrl = MOVIE_BASE_URL + movieIds.get(randomNum).movieId;
+					Log.v("MovieUrl -> ", movieUrl);
+					moviesToFetch.add(movieUrl);
+					
+					// Movie this unseen movie to first seen movie 
+					MovieIdSeen tmp = movieIds.get(movieIdRange-1);
+					movieIds.set(movieIdRange-1, movieIds.get(randomNum));
+					movieIds.set(randomNum, tmp);
+					
+					movieIdRange--;
+					idsGenerated++;
+				}
+			}
+		}
+		
+		return moviesToFetch;
 	}
 	
 	private void showData() {
@@ -200,7 +301,7 @@ public class MovieUI extends Activity {
 		for (int i=0; i<Math.min(cursor.getCount(), MOVIES_BUFFER_LENGTH); ++i) {
 			cursor.moveToPosition(i);
 			Movie movie = new Movie();
-			movie.setImdbId(cursor.getInt(indexID));
+			movie.setImdbId(cursor.getString(indexID));
 			movie.setName(cursor.getString(indexTitle));
 			movie.setUrl(cursor.getString(indexData));
 			Log.v("Movie name:", movie.name);
@@ -213,7 +314,7 @@ public class MovieUI extends Activity {
 	}
 	
 	private void createDummyDatabase () {
-		DatabaseHelper dbHelper = new DatabaseHelper(this);
+		//DatabaseHelper dbHelper = new DatabaseHelper(this);
 		Log.v(TAG, ": Inserting into the DB");
 //		dbHelper.addMovie(new Movie(10,"Her", "http://www.imdb.com/her.jpg"));
 //		dbHelper.addMovie(new Movie(11,"Iron Man", "http://www.imdb.com/ironMan.jpg"));
@@ -312,9 +413,14 @@ public class MovieUI extends Activity {
 				if (dY>0) {
 					Log.v("up swipe", "dX: " + dX + ", dY: " + dY);
 					Toast.makeText(getApplicationContext(), "Up Swipe", Toast.LENGTH_SHORT).show();
+					
+					// Remove the currentMovie from movies & put in watchedMovies with liked=true
+					// Show other movie in all of these cases
 				} else {
 					Log.v("down swipe", "dX: " + dX + ", dY: " + dY);
 					Toast.makeText(getApplicationContext(), "Down Swipe", Toast.LENGTH_SHORT).show();
+					
+					// Remove the currentMovie from movies & put in watchedMovies with liked=false
 				}
 
 				return true;
@@ -350,10 +456,20 @@ public class MovieUI extends Activity {
         
 	}
 	
-	private class DownloadMoviesTask extends AsyncTask<String, Void, List<String>> {
+	private class DownloadMoviesTask extends AsyncTask<String, Void, List<Movie>> {
+		private ProgressDialog progressDialog; 
+		
 		@Override
-		protected List<String> doInBackground(String... urls) {
-			List<String> downloadedPictures = new ArrayList<String>();
+		protected void onPreExecute(){ 
+			   super.onPreExecute();
+		       progressDialog = new ProgressDialog(context);
+		       progressDialog.setMessage("Loading...");
+		       progressDialog.show();    
+		}
+		
+		@Override
+		protected List<Movie> doInBackground(String... urls) {
+			List<Movie> downloadedPictures = new ArrayList<Movie>();
 			
 			// http://harshversion1.appspot.com/get_movie/tt2308606
 			for (String url : urls) {
@@ -371,16 +487,28 @@ public class MovieUI extends Activity {
 						JSONObject moviesArray = new JSONObject(json);
 						
 						// TODO change it to ENUM or something similar
-						String moviePicUrl = moviesArray.getString("poster");
-						String movieId = moviesArray.getString("imdb_id");
-						downloadAndSaveImage (moviePicUrl, movieId);
+						String moviePicUrl = moviesArray.getString(JSON_POSTER);
+						String movieId = moviesArray.getString(JSON_ID);
+						String movieName = moviesArray.getString(JSON_TITLE);
+						
+						Log.v("Characters poster", moviePicUrl.length() +"");
+						Log.v("Characters N/A", POSTER_NA.length() + "");
+						
+						if (moviePicUrl.equals(POSTER_NA)) {
+							Log.v("No Poster for movie", movieId);
+						} else {
+							Log.v("Poster for movie ", movieId + " -> " + moviePicUrl);
+							downloadAndSaveImage (moviePicUrl, movieId);
+						}
+						
+						downloadedPictures.add(new Movie(movieId, movieName, moviePicUrl));
 					} catch (IllegalStateException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					} catch (JSONException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
-					}
+					} 
 				} catch (ClientProtocolException e) {
 				    // writing exception to log
 				    e.printStackTrace();
@@ -400,12 +528,31 @@ public class MovieUI extends Activity {
 		}
 
 		@Override
-		protected void onPostExecute(List<String> movies) {
-			Toast.makeText(context, "Movies downloaded: " + movies.size(), Toast.LENGTH_LONG).show() ;
+		protected void onPostExecute(List<Movie> moviesDownloaded) {
+			super.onPostExecute(moviesDownloaded);
+			progressDialog.dismiss();
+			
+			Toast.makeText(context, "Movies downloaded: " + moviesDownloaded.size(), Toast.LENGTH_LONG).show();
+			// clear the current movies list
+			movies.clear();
+			
+			for (Movie movie : moviesDownloaded) {
+				// TODO modify this to check if the movie is already present
+				Log.v("onPostExecute", movie.toString());
+				dbHelper.addMovie(movie);
+				movies.add(movie);
+			}
+			
+			if(movies.size()>0) { 
+				currentMovie=0;
+				showMovie();
+			}
 		}
 		
 		private String downloadAndSaveImage (String imageUrl, String ID) {
 			String savedFileName="";
+			
+			// TODO some movies don't have the poster available
 			
 			try {
 				InputStream is = (InputStream) new URL(imageUrl).getContent();
@@ -431,5 +578,28 @@ public class MovieUI extends Activity {
 			return savedFileName;
 		}
 		
+	}
+
+	private class MovieIdSeen {
+		private String movieId;
+		private boolean seen;
+		
+		public MovieIdSeen(String movieId, boolean seen) {
+			this.movieId = movieId;
+			this.seen = seen;
+		}
+		
+		public String getMovieId() {
+			return movieId;
+		}
+		public void setMovieId(String movieId) {
+			this.movieId = movieId;
+		}
+		public boolean isSeen() {
+			return seen;
+		}
+		public void setSeen(boolean seen) {
+			this.seen = seen;
+		}
 	}
 }

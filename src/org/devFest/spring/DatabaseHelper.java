@@ -17,16 +17,34 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     // Database Name
     private static final String DATABASE_NAME = "moviesManager";
  
-    // Contacts table name
+    // Movies table name
     private static final String TABLE_MOVIES = "movies";
+    private static final String TABLE_WATCHED_MOVIES = "watched_movies";
  
-    // Contacts Table Columns names
+    // Movies Table Columns names
     private static final String KEY_ID = "id";
     private static final String KEY_IMDB = "imdbId";
     private static final String KEY_NAME = "name";
     private static final String KEY_URL = "url";
+    private static final String KEY_LIKED = "liked";
 
-	 Context myContext;
+    // Create Table queries
+    private static final String CREATE_TABLE_MOVIES =
+    		"CREATE TABLE " + TABLE_MOVIES + "("
+            + KEY_ID + " INTEGER PRIMARY KEY,"
+            + KEY_IMDB + " TEXT UNIQUE ON CONFLICT REPLACE,"
+    		+ KEY_NAME + " TEXT,"
+            + KEY_URL + " TEXT" + ")";
+    
+    private static final String CREATE_TABLE_WATCHED_MOVIES =
+    		"CREATE TABLE " + TABLE_WATCHED_MOVIES + "("
+            + KEY_ID + " INTEGER PRIMARY KEY,"
+            + KEY_IMDB + " TEXT UNIQUE ON CONFLICT REPLACE,"
+    		+ KEY_NAME + " TEXT,"
+            + KEY_URL + " TEXT,"
+    		+ KEY_LIKED + "INTEGER" + ")";
+    
+	Context myContext;
 	
 	public DatabaseHelper(Context context) {
 		super( context, DATABASE_NAME, null, DATABASE_VERSION );
@@ -38,35 +56,56 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
 	@Override
 	public void onCreate(SQLiteDatabase db) {
-		// Creating Tables
-	    String CREATE_MOVIES_TABLE = "CREATE TABLE " + TABLE_MOVIES + "("
-	            + KEY_ID + " INTEGER PRIMARY KEY,"
-	            + KEY_IMDB + " INTEGER,"
-	    		+ KEY_NAME + " TEXT,"
-	            + KEY_URL + " TEXT" + ")";
-	    db.execSQL(CREATE_MOVIES_TABLE);
+	    db.execSQL(CREATE_TABLE_MOVIES);
+	    db.execSQL(CREATE_TABLE_WATCHED_MOVIES);
 	}
 
 	@Override
 	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
 		// Drop older table if existed
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_MOVIES);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_WATCHED_MOVIES);
  
         // Create tables again
         onCreate(db);
 	}
 
-	public void addMovie (Movie movie) {
+	public void onDowngrade (SQLiteDatabase db, int oldVersion, int newVersion) {
+		// Drop older table if existed
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_MOVIES);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_WATCHED_MOVIES);
+ 
+        // Create tables again
+        onCreate(db);
+	}
+	
+	private void addMovieAddOn (String tableName, ContentValues values) {
 		SQLiteDatabase db = this.getWritableDatabase();
-		 
+		
+	    // Inserting Row
+	    db.insert(tableName, null, values);
+	    db.close(); // Closing database connection
+	}
+	
+	public void addMovie (Movie movie) {
 	    ContentValues values = new ContentValues();
 	    values.put(KEY_IMDB, movie.getImdbId()); 
 	    values.put(KEY_NAME, movie.getName()); 
 	    values.put(KEY_URL, movie.getUrl()); 	
 	 
 	    // Inserting Row
-	    db.insert(TABLE_MOVIES, null, values);
-	    db.close(); // Closing database connection
+	    addMovieAddOn(TABLE_MOVIES, values);
+	}
+	
+	public void addWatchedMovie (Movie movie, boolean liked) {	 
+	    ContentValues values = new ContentValues();
+	    values.put(KEY_IMDB, movie.getImdbId()); 
+	    values.put(KEY_NAME, movie.getName()); 
+	    values.put(KEY_URL, movie.getUrl());
+	    values.put(KEY_LIKED, liked);
+	 
+	    // Inserting Row
+	    addMovieAddOn(TABLE_WATCHED_MOVIES, values);
 	}
 	
 	public Movie getMovie (int id) {
@@ -78,17 +117,17 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 	    if (cursor != null)
 	        cursor.moveToFirst();
 	 
-	    Movie movie = new Movie(Integer.parseInt(cursor.getString(0)), 
-	    		Integer.parseInt(cursor.getString(1)),
-	            cursor.getString(2), cursor.getString(3));
+	    Movie movie = new Movie(
+	    		Integer.parseInt(cursor.getString(0)), 
+	    		cursor.getString(1),
+	            cursor.getString(2),
+	            cursor.getString(3));
 	    
 	    return movie;
 	}
 
-	public List<Movie> getAllMovies() {
+	private List<Movie> getAllMovies(String selectQuery) {
 	    List<Movie> movieList = new ArrayList<Movie>();
-	    // Select All Query
-	    String selectQuery = "SELECT  * FROM " + TABLE_MOVIES;
 	 
 	    SQLiteDatabase db = this.getWritableDatabase();
 	    Cursor cursor = db.rawQuery(selectQuery, null);
@@ -98,7 +137,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 	        do {
 	            Movie movie = new Movie();
 	            movie.setId(Integer.parseInt(cursor.getString(0)));
-	            movie.setImdbId(Integer.parseInt(cursor.getString(1)));
+	            movie.setImdbId(cursor.getString(1));
 	            movie.setName(cursor.getString(2));
 	            movie.setUrl(cursor.getString(3));
 	            
@@ -107,10 +146,20 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 	        } while (cursor.moveToNext());
 	    }
 	 
-	    // return contact list
 	    return movieList;
 	}
 	
+	public List<Movie> getAllMovies() {
+	    // Select All Query
+	    String selectQuery = "SELECT  * FROM " + TABLE_MOVIES;
+	    return getAllMovies(selectQuery);
+	}
+	
+	public List<Movie> getAllWatchedMovies() {
+	    // Select All Query
+	    String selectQuery = "SELECT  * FROM " + TABLE_WATCHED_MOVIES;
+	    return getAllMovies(selectQuery);
+	}
 	
 	public int getMoviesCount() {
         String countQuery = "SELECT  * FROM " + TABLE_MOVIES;

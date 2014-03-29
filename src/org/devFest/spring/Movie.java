@@ -9,11 +9,11 @@ public class Movie {
 	public void setId(long id) {
 		this.id = id;
 	}
-	long imdbId;
+	String imdbId;
 	String name;
 	String url;
 	
-	public long getImdbId() {return imdbId; }
+	public String getImdbId() {return imdbId; }
 	
 	public String getName() {
 		return name;
@@ -27,22 +27,25 @@ public class Movie {
 	public void setUrl(String url) {
 		this.url = url;
 	}
-	public void setImdbId(long imdbId) {
+	public void setImdbId(String imdbId) {
 		this.imdbId = imdbId;
 	}
 	
 	Movie(){}
-	public Movie(long id, long imdbId, String name, String url) {
+	public Movie(long id, String imdbId, String name, String url) {
 		this.id=id;
 		this.imdbId=imdbId;
 		this.name= name;
 		this.url=url;
 	}
 	
-	public Movie(long imdbId, String name, String url) {
+	public Movie(String imdbId, String name, String url) {
 		this.imdbId=imdbId;
 		this.name= name;
 		this.url=url;
 	}
 	
+	public String toString(){
+		return "(" + name + "," + imdbId + "," + url + ")";
+	}
 }
