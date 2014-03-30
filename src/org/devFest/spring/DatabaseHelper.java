@@ -12,7 +12,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 public class DatabaseHelper extends SQLiteOpenHelper {
 	// All Static variables
     // Database Version
-    private static final int DATABASE_VERSION = 1;
+    private static final int DATABASE_VERSION = 2;
  
     // Database Name
     private static final String DATABASE_NAME = "moviesManager";
@@ -29,6 +29,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String KEY_PLOT = "plot";
     private static final String KEY_RATING = "rating";
     private static final String KEY_LIKED = "liked";
+    
+    private static final String LIKED_STR="Y";
+    private static final String DISLIKED_STR="N";
 
     // Create Table queries
     private static final String CREATE_TABLE_MOVIES =
@@ -112,7 +115,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 	    values.put(KEY_URL, movie.getUrl());
 	    values.put(KEY_PLOT, movie.getPlotSummary());
 	    values.put(KEY_RATING, movie.getRating());
-	    values.put(KEY_LIKED, liked);
+	    
+	    if (liked)  values.put(KEY_LIKED, LIKED_STR);
+	    else 		values.put(KEY_LIKED, DISLIKED_STR);
 	 
 	    // Inserting Row
 	    addMovieAddOn(TABLE_WATCHED_MOVIES, values);
@@ -165,10 +170,35 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 	    return getAllMovies(selectQuery);
 	}
 	
-	public List<Movie> getAllWatchedMovies() {
+	public List<Movie> getAllWatchedMovies(boolean liked) {
+		String likedStr = "";
+		if (liked) 	likedStr = LIKED_STR ;
+		else 		likedStr = DISLIKED_STR;
+		
 	    // Select All Query
-	    String selectQuery = "SELECT  * FROM " + TABLE_WATCHED_MOVIES;
-	    return getAllMovies(selectQuery);
+	    String selectQuery = "SELECT  * FROM " + TABLE_WATCHED_MOVIES
+	    		+ " WHERE " + KEY_LIKED + " = ? ";
+	    
+	    List<Movie> movieList = new ArrayList<Movie>();
+		 
+	    SQLiteDatabase db = this.getWritableDatabase();
+	    Cursor cursor = db.rawQuery(selectQuery, new String[] { likedStr });
+	 
+	    // looping through all rows and adding to list
+	    if (cursor.moveToFirst()) {
+	        do {
+	            Movie movie = new Movie();
+	            movie.setId(Integer.parseInt(cursor.getString(0)));
+	            movie.setImdbId(cursor.getString(1));
+	            movie.setName(cursor.getString(2));
+	            movie.setUrl(cursor.getString(3));
+	            
+	            // Adding movie to list
+	            movieList.add(movie);
+	        } while (cursor.moveToNext());
+	    }
+	    
+	    return movieList;
 	}
 	
 	public int getMoviesCount() {

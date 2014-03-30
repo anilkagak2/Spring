@@ -3,10 +3,13 @@ package org.devFest.spring;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -56,6 +59,7 @@ import android.util.Log;
 import android.util.Pair;
 import android.view.GestureDetector;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.GestureDetector.SimpleOnGestureListener;
 import android.view.View;
@@ -85,6 +89,7 @@ public class MovieUI extends Activity {
 	private static final int MOVIES_DECK_SIZE=15;
 	private static final String POSTER_NA = "N/A";
 	private static final String MOVIE_BASE_URL = "http://www.omdbapi.com/?i=";
+	private static final String MOVIE_IDS_ARRAY_FILE = "movieIdsArray.txt";
 	
 	private static final String JSON_POSTER 	="Poster";
 	private static final String JSON_TITLE		="Title";
@@ -98,6 +103,7 @@ public class MovieUI extends Activity {
 		setContentView(R.layout.activity_movie_ui);
 		
 		context = this;
+		dbHelper = new DatabaseHelper(this);
 		
 		gDetector = new GestureDetector(this, new MyGestureDetector());
 		View mainView = (View) findViewById(R.id.mainView);
@@ -135,11 +141,8 @@ public class MovieUI extends Activity {
 		// TODO save this variable on disk & read from there after first invocation
 		movieIds = new ArrayList<MovieIdSeen>();
 		readMovieIds();
-		movieIdRange = movieIds.size();
 		
 		Toast.makeText(this, "Movie Ids: " + movieIds.size(), Toast.LENGTH_SHORT).show();
-		
-		dbHelper = new DatabaseHelper(this);
 		
 		/*List<String> moviesToFetch = getNewMovieIdsToLoad();
 		for (String movie : moviesToFetch) {
@@ -171,6 +174,34 @@ public class MovieUI extends Activity {
 		showMovie();
 	}
 
+	@Override
+	protected void onStop() {
+	    super.onStop();  // Always call the superclass method first
+
+	    // Save the movie Ids array to stable store
+	    // TODO resolve this bug
+	    // saveMovieIdsArray();
+	}
+	
+	/* Checks if external storage is available for read and write */
+	public boolean isExternalStorageWritable() {
+	    String state = Environment.getExternalStorageState();
+	    if (Environment.MEDIA_MOUNTED.equals(state)) {
+	        return true;
+	    }
+	    return false;
+	}
+
+	/* Checks if external storage is available to at least read */
+	public boolean isExternalStorageReadable() {
+	    String state = Environment.getExternalStorageState();
+	    if (Environment.MEDIA_MOUNTED.equals(state) ||
+	        Environment.MEDIA_MOUNTED_READ_ONLY.equals(state)) {
+	        return true;
+	    }
+	    return false;
+	}
+	
 	private void downloadNewMovies () {
 		if (downloadGoing) return;
 		
@@ -187,7 +218,13 @@ public class MovieUI extends Activity {
 	
 	// Removes movies from the deck[ min (count, size/2) ] from the beginning
 	private void removeMoviesOfDeck (int count) {
-		movies.subList(0, Math.min(count, movies.size()/2)).clear();
+		int toDelete = Math.min(count, movies.size()/2);
+		for (int i=0; i<toDelete; ++i) {
+			// TODO should remove only the shown movies
+			if (movies.get(i).shown) moviesShown--;
+		}
+		
+		movies.subList(0, toDelete).clear();
 		currentMovie=0;
 	}
 	
@@ -206,6 +243,44 @@ public class MovieUI extends Activity {
 		// Inflate the menu; this adds items to the action bar if it is present.
 		getMenuInflater().inflate(R.menu.movie_ui, menu);
 		return true;
+	}
+	
+	private void showMovies (boolean liked) {
+		Log.v("Show Movies", "--");
+    	
+    	ArrayList<Movie> watchedMovies = (ArrayList<Movie>) dbHelper.getAllWatchedMovies(liked);
+    	if (watchedMovies == null) {
+    		Log.v("watched movies", "is null");
+    		return;
+    	}
+    	
+    	String showNow="";
+    	if (liked) {
+    		showNow="Movies you liked";
+    	} else {
+    		showNow = "Movies you disliked";
+    	}
+    	
+    	Intent intent = new Intent(MovieUI.this, ShowWatched.class);
+    	intent.putParcelableArrayListExtra("Movies", watchedMovies);
+    	intent.putExtra("showNow", showNow);
+    	Log.v("showMovies", "starting the activity");
+		startActivity(intent);
+	}
+	
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+	    // Handle item selection
+	    switch (item.getItemId()) {
+	        case R.id.action_showliked:
+	            showMovies(true);
+	            return true;
+	        case R.id.action_showdisliked:
+	        	showMovies(false); 
+	            return true;
+	        default:
+	            return super.onOptionsItemSelected(item);
+	    }
 	}
 	
 	private void showNext() {
@@ -242,6 +317,7 @@ public class MovieUI extends Activity {
 		
 		// Remove some movies from the deck
 		if (movies.size() >= MOVIES_DECK_SIZE) {
+			
 			removeMoviesOfDeck(MOVIES_DECK_SIZE/2);
 		}
 		
@@ -289,26 +365,113 @@ public class MovieUI extends Activity {
 		showMovie();
 	}
 	
-	private void readMovieIds () {
-		InputStream input = getResources().openRawResource(R.raw.movieids);
-		BufferedReader reader = new BufferedReader(new InputStreamReader(input));
-		String id=null;
+
+	// Saves the movie ids array mapping to the sd card
+	private void saveMovieIdsArray() {
+		/*if (isExternalStorageWritable()) {
+			Log.v("StorageNotWriteable", "saveMovieIdsArray storage not readable");
+			Toast.makeText(this, "SDCard not available for writing", Toast.LENGTH_LONG).show();
+			
+			// TODO check if this is what we wanted
+			Log.v("CloseApp", "finish called at saveMovieIdsArray");
+			finish();
+		}
+		*/
+		Log.v("SavingMovieIdsArray", "--");
 		try {
-			id = reader.readLine();
+			File file = new File(picturesDir + File.separator + MOVIE_IDS_ARRAY_FILE);
+			OutputStreamWriter out = new OutputStreamWriter(new FileOutputStream(file));
+			for (MovieIdSeen mix : movieIds) {
+				out.write(mix.movieId);
+				out.write('-');
+				
+				if (mix.seen) out.write('Y');
+				else out.write('N');
+				out.write('\n');
+			}
+			out.flush();
+			out.close();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	}
+	
+	// Reads the movie ids array mapping from the sd card
+	private void readMovieIdsArray() {
+		if(movieIds.size() > 0) {
+			Log.v("movieIds", "size not 0");
+			movieIds.clear();
+		}
 		
-		while (id != null) {
-			movieIds.add(new MovieIdSeen(id, false));
+		try {
+			File file = new File(picturesDir + File.separator + MOVIE_IDS_ARRAY_FILE);
+			InputStreamReader instream = new InputStreamReader(new FileInputStream(file));
+			BufferedReader reader = new BufferedReader(instream);
+			String mixStr = reader.readLine();
+			
+			while (mixStr != null) {
+				MovieIdSeen mix = new MovieIdSeen("", false);
+				mix.movieId =  mixStr.substring(0, mixStr.indexOf('-'));
+				String seen = mixStr.substring(mixStr.indexOf('-')+1, mixStr.length());
+				
+				if (seen == "N") mix.seen=false;
+				else mix.seen=true;
+				movieIds.add(mix);
+			}
+			
+			reader.close();
+			movieIdRange = movieIds.size();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	private void readMovieIds () {
+		/*if (isExternalStorageReadable()) {
+			Log.v("StorageNotReadable", "readMovieIds storage not readable");
+			Toast.makeText(this, "SDCard not available for reading", Toast.LENGTH_LONG).show();
+			
+			// TODO check if this is what we wanted
+			Log.v("CloseApp", "finish called at readMovieIds");
+			finish();
+		}*/
+		
+		/*File file = new File(picturesDir + File.separator + MOVIE_IDS_ARRAY_FILE);
+		if (file.exists()) {
+			Log.v("movieIds", "reading the movie ids from sdcard");
+			readMovieIdsArray();
+		}
+		else {*/
+			Log.v("movieIds", "reading the movie ids from raw resource");
+			InputStream input = getResources().openRawResource(R.raw.movieids);
+			BufferedReader reader = new BufferedReader(new InputStreamReader(input));
+			String id=null;
 			try {
 				id = reader.readLine();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-		}
+			
+			while (id != null) {
+				movieIds.add(new MovieIdSeen(id, false));
+				try {
+					id = reader.readLine();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			movieIdRange = movieIds.size();
+		//}
 	}
 	
 	private List<String> getNewMovieIdsToLoad () {
