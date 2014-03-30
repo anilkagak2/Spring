@@ -36,6 +36,7 @@ import com.google.android.gms.internal.ht;
 
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
 import android.gesture.GestureOverlayView.OnGestureListener;
 import android.graphics.Bitmap;
@@ -76,7 +77,7 @@ public class MovieUI extends Activity {
 	private int currentMovie=-1;
 	private File picturesDir;
 	private static final String TAG="MovieUI";
-	private static final int MOVIES_BUFFER_LENGTH=10;
+	private static final int MOVIES_BUFFER_LENGTH=5;
 	private static final String POSTER_NA = "N/A";
 	private static final String MOVIE_BASE_URL = "http://www.omdbapi.com/?i=";
 	
@@ -106,6 +107,16 @@ public class MovieUI extends Activity {
 		});
 		
 		gImage = (ImageView) findViewById(R.id.imgDisplay);
+		/*gImage.setOnClickListener(new View.OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				Intent intent = new Intent(MovieUI.this, AboutMovie.class);
+				intent.putExtra("AboutMovie", movies.get(currentMovie));
+				startActivity(intent);
+			}
+		});*/
+		
 		movies = new ArrayList<Movie>();
 		
 		ratingView = (TextView) findViewById(R.id.ImdbRatingValue);
@@ -475,6 +486,10 @@ public class MovieUI extends Activity {
         @Override
         public boolean onSingleTapUp(MotionEvent e) {
         	Log.v("Single Tap up", "--");
+        	Intent intent = new Intent(MovieUI.this, AboutMovie.class);
+			intent.putExtra("AboutMovie", movies.get(currentMovie));
+			startActivity(intent);
+        	
             return true;
         }
         

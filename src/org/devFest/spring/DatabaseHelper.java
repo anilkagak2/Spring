@@ -12,7 +12,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 public class DatabaseHelper extends SQLiteOpenHelper {
 	// All Static variables
     // Database Version
-    private static final int DATABASE_VERSION = 2;
+    private static final int DATABASE_VERSION = 1;
  
     // Database Name
     private static final String DATABASE_NAME = "moviesManager";
@@ -26,23 +26,29 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String KEY_IMDB = "imdbId";
     private static final String KEY_NAME = "name";
     private static final String KEY_URL = "url";
+    private static final String KEY_PLOT = "plot";
+    private static final String KEY_RATING = "rating";
     private static final String KEY_LIKED = "liked";
 
     // Create Table queries
     private static final String CREATE_TABLE_MOVIES =
     		"CREATE TABLE " + TABLE_MOVIES + "("
-            + KEY_ID + " INTEGER PRIMARY KEY,"
-            + KEY_IMDB + " TEXT UNIQUE ON CONFLICT REPLACE,"
-    		+ KEY_NAME + " TEXT,"
-            + KEY_URL + " TEXT" + ")";
+            + KEY_ID 		+ " INTEGER PRIMARY KEY,"
+            + KEY_IMDB 		+ " TEXT UNIQUE ON CONFLICT REPLACE,"
+    		+ KEY_NAME 		+ " TEXT,"
+            + KEY_URL 		+ " TEXT,"
+            + KEY_PLOT 		+ " TEXT,"
+            + KEY_RATING 	+ " TEXT" + ")";
     
     private static final String CREATE_TABLE_WATCHED_MOVIES =
     		"CREATE TABLE " + TABLE_WATCHED_MOVIES + "("
-            + KEY_ID + " INTEGER PRIMARY KEY,"
-            + KEY_IMDB + " TEXT UNIQUE ON CONFLICT REPLACE,"
-    		+ KEY_NAME + " TEXT,"
-            + KEY_URL + " TEXT,"
-    		+ KEY_LIKED + " INTEGER" + ")";
+            + KEY_ID 		+ " INTEGER PRIMARY KEY,"
+            + KEY_IMDB 		+ " TEXT UNIQUE ON CONFLICT REPLACE,"
+    		+ KEY_NAME 		+ " TEXT,"
+            + KEY_URL 		+ " TEXT,"
+            + KEY_PLOT 		+ " TEXT,"
+            + KEY_RATING 	+ " TEXT,"
+    		+ KEY_LIKED 	+ " INTEGER" + ")";
     
 	Context myContext;
 	
@@ -91,7 +97,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 	    ContentValues values = new ContentValues();
 	    values.put(KEY_IMDB, movie.getImdbId()); 
 	    values.put(KEY_NAME, movie.getName()); 
-	    values.put(KEY_URL, movie.getUrl()); 	
+	    values.put(KEY_URL, movie.getUrl());
+	    values.put(KEY_PLOT, movie.getPlotSummary());
+	    values.put(KEY_RATING, movie.getRating());
 	 
 	    // Inserting Row
 	    addMovieAddOn(TABLE_MOVIES, values);
@@ -102,6 +110,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 	    values.put(KEY_IMDB, movie.getImdbId()); 
 	    values.put(KEY_NAME, movie.getName()); 
 	    values.put(KEY_URL, movie.getUrl());
+	    values.put(KEY_PLOT, movie.getPlotSummary());
+	    values.put(KEY_RATING, movie.getRating());
 	    values.put(KEY_LIKED, liked);
 	 
 	    // Inserting Row
@@ -178,6 +188,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 	    values.put(KEY_NAME, movie.getName());
 	    values.put(KEY_IMDB, movie.getImdbId());
 	    values.put(KEY_URL, movie.getUrl());
+	    values.put(KEY_PLOT, movie.getPlotSummary());
+	    values.put(KEY_RATING, movie.getRating());
 	 
 	    // updating row
 	    return db.update(TABLE_MOVIES, values, KEY_ID + " = ?",

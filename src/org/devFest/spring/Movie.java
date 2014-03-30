@@ -1,45 +1,29 @@
 package org.devFest.spring;
 
-public class Movie {
-	long id;
-	public long getId() {
-		return id;
-	}
+import android.os.Parcel;
+import android.os.Parcelable;
 
-	public void setId(long id) {
-		this.id = id;
-	}
-	String imdbId;
+public class Movie implements Parcelable {
+	long id;
 	String name;
+	String imdbId;
 	String url;
 	String rating;
 	String plotSummary;
 	
-	public String getPlotSummary() {
-		return plotSummary;
-	}
-
-	public void setPlotSummary(String plotSummary) {
-		this.plotSummary = plotSummary;
-	}
-
-	public String getImdbId() {return imdbId; }
+	public long getId() { return id; }
+	public String getPlotSummary() { return plotSummary; }
+	public String getImdbId() { return imdbId; }
+	public String getName() { return name; }
+	public String getUrl() { return url; }
+	public String getRating() { return rating; }
 	
-	public String getName() {
-		return name;
-	}
-	public void setName(String name) {
-		this.name = name;
-	}
-	public String getUrl() {
-		return url;
-	}
-	public void setUrl(String url) {
-		this.url = url;
-	}
-	public void setImdbId(String imdbId) {
-		this.imdbId = imdbId;
-	}
+	public void setId(long id) { this.id = id; }
+	public void setPlotSummary(String plotSummary) { this.plotSummary = plotSummary; }
+	public void setImdbId(String imdbId) { this.imdbId = imdbId;}
+	public void setName(String name) { this.name = name; }
+	public void setUrl(String url) { this.url = url; }
+	public void setRating(String rating) { this.rating = rating; }
 	
 	Movie(){}
 	public Movie(long id, String imdbId, String name, String url) {
@@ -74,15 +58,40 @@ public class Movie {
 		this.plotSummary=plot;
 	}
 	
-	public String getRating() {
-		return rating;
-	}
-
-	public void setRating(String rating) {
-		this.rating = rating;
-	}
-
 	public String toString(){
 		return "(" + name + "," + imdbId + "," + url + ")";
+	}
+	
+	@Override
+	public int describeContents() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+	
+	@Override
+	public void writeToParcel(Parcel dest, int flags) {
+		dest.writeString(name);
+		dest.writeString(imdbId);
+		dest.writeString(url);
+		dest.writeString(rating);
+		dest.writeString(plotSummary);
+	}
+	
+	public static final Parcelable.Creator<Movie> CREATOR = new Parcelable.Creator<Movie>() {
+        public Movie createFromParcel(Parcel in) {
+            return new Movie(in);
+        }
+
+        public Movie[] newArray(int size) {
+            return new Movie[size];
+        }
+    };
+	
+	private Movie(Parcel movie) {
+		this.name = movie.readString();
+		this.imdbId = movie.readString();
+		this.url = movie.readString();
+		this.rating = movie.readString();
+		this.plotSummary = movie.readString();
 	}
 }
