@@ -12,7 +12,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 public class DatabaseHelper extends SQLiteOpenHelper {
 	// All Static variables
     // Database Version
-    private static final int DATABASE_VERSION = 1;
+    private static final int DATABASE_VERSION = 2;
  
     // Database Name
     private static final String DATABASE_NAME = "moviesManager";
@@ -42,7 +42,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             + KEY_IMDB + " TEXT UNIQUE ON CONFLICT REPLACE,"
     		+ KEY_NAME + " TEXT,"
             + KEY_URL + " TEXT,"
-    		+ KEY_LIKED + "INTEGER" + ")";
+    		+ KEY_LIKED + " INTEGER" + ")";
     
 	Context myContext;
 	

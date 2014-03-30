@@ -60,12 +60,14 @@ import android.view.GestureDetector.SimpleOnGestureListener;
 import android.view.View;
 import android.widget.Gallery;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 public class MovieUI extends Activity {
 
 	GestureDetector gDetector;
 	ImageView gImage;
+	TextView ratingView,titleView;
 	private Context context;
 	private DatabaseHelper dbHelper;
 	private List<Movie> movies;
@@ -78,9 +80,11 @@ public class MovieUI extends Activity {
 	private static final String POSTER_NA = "N/A";
 	private static final String MOVIE_BASE_URL = "http://www.omdbapi.com/?i=";
 	
-	private static final String JSON_POSTER="Poster";
-	private static final String JSON_TITLE="Title";
-	private static final String JSON_ID="imdbID";
+	private static final String JSON_POSTER 	="Poster";
+	private static final String JSON_TITLE		="Title";
+	private static final String JSON_ID			="imdbID";
+	private static final String JSON_RATING		="imdbRating";
+	private static final String JSON_PLOT		="Plot";
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -104,6 +108,9 @@ public class MovieUI extends Activity {
 		gImage = (ImageView) findViewById(R.id.imgDisplay);
 		movies = new ArrayList<Movie>();
 		
+		ratingView = (TextView) findViewById(R.id.ImdbRatingValue);
+		titleView = (TextView) findViewById(R.id.NameValue);
+				
 		picturesDir = getAlbumStorageDir(this, "SpringMovies");
 		//Toast.makeText(this, "Dir : SpringMovies created", Toast.LENGTH_SHORT).show();
 		
@@ -194,6 +201,9 @@ public class MovieUI extends Activity {
 		// TODO check for the existence
 		// Ideally we should not load from the imagePath instead we can 
 		// maintain the bitmaps we've downloaded
+		titleView.setText(movies.get(currentMovie).name);
+		ratingView.setText(movies.get(currentMovie).rating);
+		
 		String imagePath = picturesDir.getAbsolutePath() + File.separator
 				+ movies.get(currentMovie).imdbId + ".jpg";
 		Log.v("SHowing movie", imagePath);
@@ -212,6 +222,18 @@ public class MovieUI extends Activity {
 		
 		// NEXT MOVIE TO SHOW
 		// currentMovie++;
+	}
+	
+	private void saveWatchedMovie(boolean liked) {
+		if (currentMovie == -1) {
+			Log.v("save watchedMovie", "No movie on the deck");
+			return;
+		}
+		
+		// Add the movie to watched movies & remove it from this list
+		dbHelper.addWatchedMovie(movies.get(currentMovie), liked);
+		movies.remove(currentMovie);
+		showMovie();
 	}
 	
 	private void readMovieIds () {
@@ -414,12 +436,14 @@ public class MovieUI extends Activity {
 					Log.v("up swipe", "dX: " + dX + ", dY: " + dY);
 					Toast.makeText(getApplicationContext(), "Up Swipe", Toast.LENGTH_SHORT).show();
 					
+					saveWatchedMovie(true);
 					// Remove the currentMovie from movies & put in watchedMovies with liked=true
 					// Show other movie in all of these cases
 				} else {
 					Log.v("down swipe", "dX: " + dX + ", dY: " + dY);
 					Toast.makeText(getApplicationContext(), "Down Swipe", Toast.LENGTH_SHORT).show();
 					
+					saveWatchedMovie(false);
 					// Remove the currentMovie from movies & put in watchedMovies with liked=false
 				}
 
@@ -490,6 +514,8 @@ public class MovieUI extends Activity {
 						String moviePicUrl = moviesArray.getString(JSON_POSTER);
 						String movieId = moviesArray.getString(JSON_ID);
 						String movieName = moviesArray.getString(JSON_TITLE);
+						String movieRating = moviesArray.getString(JSON_RATING);
+						String moviePlot = moviesArray.getString(JSON_PLOT);
 						
 						Log.v("Characters poster", moviePicUrl.length() +"");
 						Log.v("Characters N/A", POSTER_NA.length() + "");
@@ -501,7 +527,7 @@ public class MovieUI extends Activity {
 							downloadAndSaveImage (moviePicUrl, movieId);
 						}
 						
-						downloadedPictures.add(new Movie(movieId, movieName, moviePicUrl));
+						downloadedPictures.add(new Movie(movieId, movieName, moviePicUrl, movieRating, moviePlot));
 					} catch (IllegalStateException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();

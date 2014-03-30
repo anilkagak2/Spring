@@ -30,5 +30,39 @@
         android:layout_alignBottom="@+id/imgDisplay"
         android:layout_centerHorizontal="true"
         android:text="Swipe Down for DisLike" />
+
+    <TextView
+        android:id="@+id/NameMovie"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/imgDisplay"
+        android:layout_below="@+id/textView1"
+        android:layout_marginTop="24dp"
+        android:text="Movie Name" />
+
+    <TextView
+        android:id="@+id/NameValue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/imgDisplay"
+        android:layout_below="@+id/NameMovie"
+        android:text="Movie Name" />
+
+    <TextView
+        android:id="@+id/ImdbRatingValue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/TextView01"
+        android:layout_alignRight="@+id/imgDisplay"
+        android:layout_marginBottom="18dp"
+        android:text="IMDB Rating" />
+
+    <TextView
+        android:id="@+id/TextView03"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/ImdbRatingValue"
+        android:layout_alignRight="@+id/imgDisplay"
+        android:text="IMDB Rating" />
  
 </RelativeLayout>
