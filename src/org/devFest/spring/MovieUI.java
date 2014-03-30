@@ -66,6 +66,8 @@ import android.widget.Toast;
 
 public class MovieUI extends Activity {
 
+	// TODO remove some movies of the deck after some point
+
 	GestureDetector gDetector;
 	ImageView gImage;
 	TextView ratingView,titleView;
@@ -75,9 +77,12 @@ public class MovieUI extends Activity {
 	private List<MovieIdSeen> movieIds;
 	private int movieIdRange;
 	private int currentMovie=-1;
+	private long moviesShown=0;
+	private boolean downloadGoing=false;		// TODO Take care of the race condition
 	private File picturesDir;
 	private static final String TAG="MovieUI";
 	private static final int MOVIES_BUFFER_LENGTH=5;
+	private static final int MOVIES_DECK_SIZE=15;
 	private static final String POSTER_NA = "N/A";
 	private static final String MOVIE_BASE_URL = "http://www.omdbapi.com/?i=";
 	
@@ -136,10 +141,10 @@ public class MovieUI extends Activity {
 		
 		dbHelper = new DatabaseHelper(this);
 		
-		List<String> moviesToFetch = getNewMovieIdsToLoad();
+		/*List<String> moviesToFetch = getNewMovieIdsToLoad();
 		for (String movie : moviesToFetch) {
 			Log.v("toFetch", movie);
-		}
+		}*/
 		
 /*		int loader = R.drawable.loader;
 		
@@ -157,14 +162,35 @@ public class MovieUI extends Activity {
 		
 		// getRecommendedMovies();
 		// createDummyDatabase();
-		new DownloadMoviesTask()
-			.execute(moviesToFetch.toArray(new String[moviesToFetch.size()]));
+		/*new DownloadMoviesTask()
+			.execute(moviesToFetch.toArray(new String[moviesToFetch.size()]));*/
 			//.execute(new String[] {"http://harshversion1.appspot.com/get_movie/tt2308606"});
+		downloadNewMovies();
 		
 		// showData();
 		showMovie();
 	}
 
+	private void downloadNewMovies () {
+		if (downloadGoing) return;
+		
+		downloadGoing=true;
+		List<String> moviesToFetch = getNewMovieIdsToLoad();
+		for (String movie : moviesToFetch) {
+			Log.v("toFetch", movie);
+		}
+		
+		new DownloadMoviesTask()
+		.execute(moviesToFetch.toArray(new String[moviesToFetch.size()]));
+		
+	}
+	
+	// Removes movies from the deck[ min (count, size/2) ] from the beginning
+	private void removeMoviesOfDeck (int count) {
+		movies.subList(0, Math.min(count, movies.size()/2)).clear();
+		currentMovie=0;
+	}
+	
 	public File getAlbumStorageDir(Context context, String albumName) {
 	    // Get the directory for the app's private pictures directory. 
 	    File file = new File(context.getExternalFilesDir(
@@ -207,6 +233,22 @@ public class MovieUI extends Activity {
 		if (currentMovie == -1) return;
 		if (currentMovie == movies.size())
 			currentMovie=0;
+		
+		// Increment the number of movies user has seen
+		if (movies.get(currentMovie).shown == false) {
+			movies.get(currentMovie).shown = true;
+			moviesShown++;
+		}
+		
+		// Remove some movies from the deck
+		if (movies.size() >= MOVIES_DECK_SIZE) {
+			removeMoviesOfDeck(MOVIES_DECK_SIZE/2);
+		}
+		
+		// If remaining movies are less than half of movies buffer => get new movies
+		if (movies.size() - moviesShown <= MOVIES_BUFFER_LENGTH/2) {
+			downloadNewMovies();
+		}
 		
 		//String imagePath = movies.get(currentMovie).url;
 		// TODO check for the existence
@@ -496,14 +538,18 @@ public class MovieUI extends Activity {
 	}
 	
 	private class DownloadMoviesTask extends AsyncTask<String, Void, List<Movie>> {
-		private ProgressDialog progressDialog; 
+		private ProgressDialog progressDialog = null; 
+		private boolean showOnPostExecution=false;
 		
 		@Override
 		protected void onPreExecute(){ 
 			   super.onPreExecute();
-		       progressDialog = new ProgressDialog(context);
-		       progressDialog.setMessage("Loading...");
-		       progressDialog.show();    
+			   if (movies.size() == 0) { 
+				   showOnPostExecution=true;
+			       progressDialog = new ProgressDialog(context);
+			       progressDialog.setMessage("Loading...");
+			       progressDialog.show();   
+			   }
 		}
 		
 		@Override
@@ -571,11 +617,13 @@ public class MovieUI extends Activity {
 		@Override
 		protected void onPostExecute(List<Movie> moviesDownloaded) {
 			super.onPostExecute(moviesDownloaded);
-			progressDialog.dismiss();
+			if (progressDialog != null)
+				progressDialog.dismiss();
 			
 			Toast.makeText(context, "Movies downloaded: " + moviesDownloaded.size(), Toast.LENGTH_LONG).show();
+			// TODO managing the list properly so that memory consuption is low
 			// clear the current movies list
-			movies.clear();
+			// movies.clear();
 			
 			for (Movie movie : moviesDownloaded) {
 				// TODO modify this to check if the movie is already present
@@ -584,10 +632,14 @@ public class MovieUI extends Activity {
 				movies.add(movie);
 			}
 			
-			if(movies.size()>0) { 
+			if(movies.size()>0 && showOnPostExecution) {
 				currentMovie=0;
 				showMovie();
 			}
+			
+			downloadGoing=false;
+			// You won't be in need of this
+			// showOnPostExecution = false;
 		}
 		
 		private String downloadAndSaveImage (String imageUrl, String ID) {

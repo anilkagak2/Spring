@@ -10,6 +10,7 @@ public class Movie implements Parcelable {
 	String url;
 	String rating;
 	String plotSummary;
+	boolean shown;
 	
 	public long getId() { return id; }
 	public String getPlotSummary() { return plotSummary; }
@@ -33,6 +34,7 @@ public class Movie implements Parcelable {
 		this.url=url;
 		this.rating="N/A";
 		this.plotSummary="N/A";
+		this.shown = false;
 	}
 	
 	public Movie(String imdbId, String name, String url) {
@@ -41,6 +43,7 @@ public class Movie implements Parcelable {
 		this.url=url;
 		this.rating="N/A";
 		this.plotSummary="N/A";
+		this.shown = false;
 	}
 	
 	public Movie(String imdbId, String name, String url, String rating) {
@@ -48,6 +51,7 @@ public class Movie implements Parcelable {
 		this.name= name;
 		this.url=url;
 		this.rating=rating;
+		this.shown = false;
 	}
 	
 	public Movie(String imdbId, String name, String url, String rating, String plot) {
@@ -56,6 +60,7 @@ public class Movie implements Parcelable {
 		this.url=url;
 		this.rating=rating;
 		this.plotSummary=plot;
+		this.shown=false;
 	}
 	
 	public String toString(){
