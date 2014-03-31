@@ -154,9 +154,9 @@ public class MovieUI extends Activity {
 		// Toast.makeText(this, "Movie Ids: " + movieIds.size(), Toast.LENGTH_SHORT).show();
 		
 		// Look up the AdView as a resource and load a request.
-	    AdView adView = (AdView)this.findViewById(R.id.adViewMovieUi);
+	    /*AdView adView = (AdView)this.findViewById(R.id.adViewMovieUi);
 	    AdRequest adRequest = new AdRequest.Builder().build();
-	    adView.loadAd(adRequest);
+	    adView.loadAd(adRequest);*/
 		
 		/*// Create an ad.
 	    adView = new AdView(this);
@@ -207,7 +207,7 @@ public class MovieUI extends Activity {
 		showMovie();
 	}	
 	
-	@Override
+	/*@Override
 	public void onResume() {
 		super.onResume();
 		if (adView != null) {
@@ -223,7 +223,6 @@ public class MovieUI extends Activity {
 	    super.onPause();
 	}
 
-	/** Called before the activity is destroyed. */
 	@Override
 	public void onDestroy() {
 		// Destroy the AdView.
@@ -231,7 +230,7 @@ public class MovieUI extends Activity {
 	    	adView.destroy();
 	    }
 	    super.onDestroy();
-	}
+	}*/
 	
 	@Override
 	protected void onStop() {
@@ -769,7 +768,7 @@ public class MovieUI extends Activity {
 			   if (movies.size() == 0) { 
 				   showOnPostExecution=true;
 			       progressDialog = new ProgressDialog(context);
-			       progressDialog.setMessage("Loading...");
+			       progressDialog.setMessage("Downloading the movie recommendations for you..");
 			       progressDialog.show();   
 			   }
 		}
@@ -779,6 +778,7 @@ public class MovieUI extends Activity {
 			List<Movie> downloadedPictures = new ArrayList<Movie>();
 			
 			// http://harshversion1.appspot.com/get_movie/tt2308606
+			/*int count=0;*/
 			for (String url : urls) {
 				HttpClient httpClient = new DefaultHttpClient();
 				HttpGet httpGet = new HttpGet(url);
@@ -799,6 +799,12 @@ public class MovieUI extends Activity {
 						String movieName = moviesArray.getString(JSON_TITLE);
 						String movieRating = moviesArray.getString(JSON_RATING);
 						String moviePlot = moviesArray.getString(JSON_PLOT);
+						
+						/*if (showOnPostExecution) {
+							count++;
+							progressDialog.setMessage("Movie downloaded: " + movieName
+									+ "\n Movies left to download: " + (urls.length - count));
+						}*/
 						
 						Log.v("Characters poster", moviePicUrl.length() +"");
 						Log.v("Characters N/A", POSTER_NA.length() + "");
