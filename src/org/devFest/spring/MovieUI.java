@@ -76,9 +76,9 @@ import android.widget.Toast;
 public class MovieUI extends Activity {
 
 	// DONE remove some movies of the deck after some point
-	/*private AdView adView;
+	private AdView adView;
 	private static final String AD_UNIT_ID = "a153397577f3c4a";
-	private static final String DEVICE_HASH_ID="INSERT_YOUR_HASHED_DEVICE_ID_HERE";*/
+	private static final String DEVICE_HASH_ID="INSERT_YOUR_HASHED_DEVICE_ID_HERE";
 
 	GestureDetector gDetector;
 	ImageView gImage;
@@ -153,6 +153,11 @@ public class MovieUI extends Activity {
 		// TODO DEBUG
 		// Toast.makeText(this, "Movie Ids: " + movieIds.size(), Toast.LENGTH_SHORT).show();
 		
+		// Look up the AdView as a resource and load a request.
+	    AdView adView = (AdView)this.findViewById(R.id.adViewMovieUi);
+	    AdRequest adRequest = new AdRequest.Builder().build();
+	    adView.loadAd(adRequest);
+		
 		/*// Create an ad.
 	    adView = new AdView(this);
 	    adView.setAdSize(AdSize.BANNER);
@@ -201,6 +206,32 @@ public class MovieUI extends Activity {
 		// showData();
 		showMovie();
 	}	
+	
+	@Override
+	public void onResume() {
+		super.onResume();
+		if (adView != null) {
+			adView.resume();
+		}
+	}
+
+	@Override
+	public void onPause() {
+		if (adView != null) {
+			adView.pause();
+	    }
+	    super.onPause();
+	}
+
+	/** Called before the activity is destroyed. */
+	@Override
+	public void onDestroy() {
+		// Destroy the AdView.
+	    if (adView != null) {
+	    	adView.destroy();
+	    }
+	    super.onDestroy();
+	}
 	
 	@Override
 	protected void onStop() {

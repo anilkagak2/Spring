@@ -234,16 +234,17 @@ containing a value of this type.
         public static final int TextView01=0x7f060011;
         public static final int TextView03=0x7f060015;
         public static final int aboutMovie=0x7f060006;
-        public static final int action_showdisliked=0x7f06001b;
-        public static final int action_showliked=0x7f06001a;
+        public static final int action_showdisliked=0x7f06001c;
+        public static final int action_showliked=0x7f06001b;
         public static final int adViewAboutMovie=0x7f060005;
-        public static final int adViewShowWatched=0x7f060016;
+        public static final int adViewMovieUi=0x7f060016;
+        public static final int adViewShowWatched=0x7f060017;
         public static final int btn_revoke_access=0x7f06000d;
         public static final int btn_sign_in=0x7f06000b;
         public static final int btn_sign_out=0x7f06000c;
         public static final int hybrid=0x7f060004;
         public static final int imgDisplay=0x7f06000f;
-        public static final int imgLogo=0x7f060019;
+        public static final int imgLogo=0x7f06001a;
         public static final int imgProfilePic=0x7f060008;
         public static final int llProfile=0x7f060007;
         public static final int mainView=0x7f06000e;
@@ -254,8 +255,8 @@ containing a value of this type.
         public static final int textView1=0x7f060010;
         public static final int txtEmail=0x7f06000a;
         public static final int txtName=0x7f060009;
-        public static final int watchedContent=0x7f060018;
-        public static final int watchedMovies=0x7f060017;
+        public static final int watchedContent=0x7f060019;
+        public static final int watchedMovies=0x7f060018;
     }
     public static final class integer {
         public static final int google_play_services_version=0x7f080000;

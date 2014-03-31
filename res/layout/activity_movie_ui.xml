@@ -24,14 +24,6 @@
         android:text="Swipe Up for Like" />
 
     <TextView
-        android:id="@+id/TextView01"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignBottom="@+id/imgDisplay"
-        android:layout_centerHorizontal="true"
-        android:text="Swipe Down for DisLike" />
-
-    <TextView
         android:id="@+id/NameMovie"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -64,5 +56,25 @@
         android:layout_above="@+id/ImdbRatingValue"
         android:layout_alignRight="@+id/imgDisplay"
         android:text="IMDB Rating" />
+
+    <com.google.android.gms.ads.AdView
+        android:id="@+id/adViewMovieUi"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        ads:adSize="BANNER"
+        ads:adUnitId="a153397577f3c4a" >
+
+    </com.google.android.gms.ads.AdView>
+
+    <TextView
+        android:id="@+id/TextView01"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/adViewMovieUi"
+        android:layout_alignRight="@+id/textView1"
+        android:layout_marginBottom="14dp"
+        android:text="Swipe Down for DisLike" />
 
 </RelativeLayout>
