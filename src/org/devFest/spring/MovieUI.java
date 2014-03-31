@@ -35,6 +35,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdSize;
+import com.google.android.gms.ads.AdView;
 import com.google.android.gms.internal.ht;
 
 import android.content.ContentResolver;
@@ -65,12 +68,17 @@ import android.view.GestureDetector.SimpleOnGestureListener;
 import android.view.View;
 import android.widget.Gallery;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 public class MovieUI extends Activity {
 
-	// TODO remove some movies of the deck after some point
+	// DONE remove some movies of the deck after some point
+	/*private AdView adView;
+	private static final String AD_UNIT_ID = "a153397577f3c4a";
+	private static final String DEVICE_HASH_ID="INSERT_YOUR_HASHED_DEVICE_ID_HERE";*/
 
 	GestureDetector gDetector;
 	ImageView gImage;
@@ -142,8 +150,28 @@ public class MovieUI extends Activity {
 		movieIds = new ArrayList<MovieIdSeen>();
 		readMovieIds();
 		
-		Toast.makeText(this, "Movie Ids: " + movieIds.size(), Toast.LENGTH_SHORT).show();
+		// TODO DEBUG
+		// Toast.makeText(this, "Movie Ids: " + movieIds.size(), Toast.LENGTH_SHORT).show();
 		
+		/*// Create an ad.
+	    adView = new AdView(this);
+	    adView.setAdSize(AdSize.BANNER);
+	    adView.setAdUnitId(AD_UNIT_ID);
+		
+	    // LinearLayout layout = (LinearLayout) findViewById(R.id.mainLayout);
+	    RelativeLayout layout = (RelativeLayout) mainView;
+	    layout.addView(adView);
+	    
+	    // Create an ad request. Check logcat output for the hashed device ID to
+	    // get test ads on a physical device.
+	    AdRequest adRequest = new AdRequest.Builder()
+	        .addTestDevice(AdRequest.DEVICE_ID_EMULATOR)
+	        .addTestDevice(DEVICE_HASH_ID)
+	        .build();
+	    
+	    // Start loading the ad in the background.
+	    adView.loadAd(adRequest);*/
+	    
 		/*List<String> moviesToFetch = getNewMovieIdsToLoad();
 		for (String movie : moviesToFetch) {
 			Log.v("toFetch", movie);
@@ -172,8 +200,8 @@ public class MovieUI extends Activity {
 		
 		// showData();
 		showMovie();
-	}
-
+	}	
+	
 	@Override
 	protected void onStop() {
 	    super.onStop();  // Always call the superclass method first
