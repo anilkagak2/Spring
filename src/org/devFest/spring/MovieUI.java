@@ -108,7 +108,8 @@ public class MovieUI extends Activity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_movie_ui);
+		//setContentView(R.layout.activity_movie_ui);
+		setContentView(R.layout.activity_movie_ui_new);
 		
 		context = this;
 		dbHelper = new DatabaseHelper(this);
@@ -154,9 +155,9 @@ public class MovieUI extends Activity {
 		// Toast.makeText(this, "Movie Ids: " + movieIds.size(), Toast.LENGTH_SHORT).show();
 		
 		// Look up the AdView as a resource and load a request.
-	    /*AdView adView = (AdView)this.findViewById(R.id.adViewMovieUi);
+	    AdView adView = (AdView)this.findViewById(R.id.adViewMainUI);
 	    AdRequest adRequest = new AdRequest.Builder().build();
-	    adView.loadAd(adRequest);*/
+	    adView.loadAd(adRequest);
 		
 		/*// Create an ad.
 	    adView = new AdView(this);
