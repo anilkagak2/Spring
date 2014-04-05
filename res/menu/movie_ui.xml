@@ -4,13 +4,15 @@
     <item
         android:id="@+id/action_showliked"
         android:orderInCategory="100"
-        android:showAsAction="ifRoom"
+        android:showAsAction="ifRoom|withText"
+        android:icon="@drawable/like"
         android:title="Show Liked"/>
 
     <item
         android:id="@+id/action_showdisliked"
         android:orderInCategory="100"
-        android:showAsAction="ifRoom"
+        android:icon="@drawable/dislike"
+        android:showAsAction="ifRoom|withText"
         android:title="Show DisLiked"/>
     
 </menu>

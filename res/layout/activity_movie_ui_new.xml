@@ -28,15 +28,6 @@
         android:text="IMDB Rating" />
 
     <TextView
-        android:id="@+id/TextView01"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_marginBottom="59dp"
-        android:layout_toRightOf="@+id/NameValue"
-        android:text="Swipe Down for DisLike" />
-
-    <TextView
         android:id="@+id/ImdbRatingValue"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -79,5 +70,13 @@
          android:layout_alignBottom="@+id/textView1"
          android:layout_alignParentLeft="true"
          android:text="Movie Name" />
+
+     <TextView
+         android:id="@+id/TextView01"
+         android:layout_width="wrap_content"
+         android:layout_height="wrap_content"
+         android:layout_above="@+id/adViewMainUI"
+         android:layout_alignRight="@+id/textView1"
+         android:text="Swipe Down for DisLike" />
     
 </RelativeLayout>
