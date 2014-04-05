@@ -52,7 +52,7 @@
             android:name="org.devFest.spring.MovieUI"
             android:label="@string/app_name"
             android:screenOrientation="portrait"
-            android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen">
+            android:theme="@android:style/Theme.Black.NoTitleBar">
         </activity>
         
         <activity
